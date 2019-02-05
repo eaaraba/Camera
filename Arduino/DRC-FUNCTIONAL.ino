@@ -37,6 +37,7 @@
 #define CMD_LED_OFF         '0'
 #define CMD_SERVO_PIN_2       '2'
 #define CMD_SERVO_PIN_3       '3'
+#define CMD_PIR_PIN_4       '4'
 #include <Servo.h>
 
 Servo pan,tilt;  // create servo object to control a servo
@@ -53,9 +54,12 @@ void setup ()
   tilt.attach(3);  // attaches the servo on pin 3 to the servo object
   pinMode(13, OUTPUT);
   digitalWrite(13, LOW);
+  pinMode(4, INPUT);
   pan.write(90);
   tilt.write(0);
 }
+
+
 
 int myGetchar ()
 {
@@ -72,10 +76,20 @@ void loop ()
   int campos ;
   int pos;
   int LEDpin ;
+  int Timer;
+  int x;
   for (;;)
   {
     if (Serial.available () > 0)
     {
+      if (true){
+       int y;
+       y = digitalRead(4);
+       if (y == 0)
+         Timer += 1;
+       else if (y == 1)
+         Timer = 0;
+      }
       switch (myGetchar ())
       {
         case CMD_PING:
@@ -121,6 +135,15 @@ void loop ()
         digitalWrite(LEDpin, HIGH);
         delay(50);
         continue;
+
+       case CMD_PIR_PIN_4:
+        x = digitalRead(4);
+        if (x == 1)
+          Serial.println("PIR Sensor is on");
+        else if (x == 0 && Timer <= 600)
+         Serial.println("The PIR Sensor has been off for less than 30 seconds");
+       else if (x == 0 && Timer > 600)
+          Serial.println("The PIR Sensor has been off for more than 30 seconds");
 
       }
     }
