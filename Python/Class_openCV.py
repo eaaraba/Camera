@@ -9,10 +9,9 @@ import cv2
 
 class CV:
 
-    def __init__(self):
-        self.arduino = serial.Serial('COM4', 115200)
-        time.sleep(0.75)
-        print("Connected to Arduino...")
+    def __init__(self, port, baudrate):
+        self.port = port
+        self.baudrate = baudrate
         self.value1 = 0
         self.value2 = 0
         self.LEDIndex = 0
@@ -23,6 +22,11 @@ class CV:
         self.face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         self.cap = cv2.VideoCapture(0)
 
+
+    def connect(self):
+        self.arduino = serial.Serial(self.port, self.baudrate)
+        time.sleep(0.75)
+        print("Connected to Arduino...")
 
 
     def LEDonoff(self):
@@ -40,31 +44,34 @@ class CV:
             print("LED OFF")
 
     def coordinates(self):
-        roi_color = self.img[self.y:self.y + self.h, self.x:self.x + self.w]
         cv2.rectangle(self.img, (self.x, self.y), (self.x + self.w, self.y + self.h), (255, 0, 0), 5)
         self.xx = int((self.x + (self.x + self.w)) / 6)
         self.faceWidth = int(self.w)
         self.yy = int((self.y + (self.y + self.h)) / 6)
         self.faceHeight = int(self.h)
-        print("x " + str(self.x), "w " + str(self.w), "y " + str(self.y), "h " + str(self.h))
+
         self.x = int(self.xx)
         self.xcoordinate = 50
         self.y = int(self.yy)
         self.ycoordinate = 51
-
-        center = (self.x, self.y)
         CV.ArduinoSend(self)
-        """print("Center of Rectangle is :", center, '\n \n')"""
+
+        center = (self.x, self.w, self.y, self.h)
+        print("Center of Rectangle is :", center, '\n \n')
+
         if self.faceInFrame == True and self.faceWidth <= 120 and self.faceHeight <= 120:
-            self.imgIndex += 1
-            self.faceInFrame = False
-            cv2.imwrite("Images\LatestImage" + str(self.imgIndex) + ".jpg", self.img)
+            CV.takepicture(self)
         time.sleep(0.01)
         cv2.imshow('img', self.img)
 
     def ArduinoSend(self):
         self.arduino.write(bytearray([self.xcoordinate, self.x]))
         self.arduino.write(bytearray([self.ycoordinate, self.y]))
+
+    def takepicture(self):
+        self.imgIndex += 1
+        self.faceInFrame = False
+        cv2.imwrite("Images\LatestImage" + str(self.imgIndex) + ".jpg", self.img)
 
     def detection(self):
         ret, self.img = self.cap.read()
@@ -87,6 +94,6 @@ class CV:
                 images.LEDonoff()
 
 
-images = CV()
-
+images = CV(input("Port: "), input("Baudrate: "))
+images.connect()
 images.loop()
