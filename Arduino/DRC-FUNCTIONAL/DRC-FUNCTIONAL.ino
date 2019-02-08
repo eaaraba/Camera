@@ -99,11 +99,11 @@ void loop ()
 
         case CMD_SERVO_PIN_2: //pan
           campos  = myGetchar () ;
-          if (campos <= 130){
+          if (campos <= 90){
             pos = pan.read() + 1;
             pan.write(pos);
           }
-          else if (campos >= 140){
+          else if (campos >= 115){
             pos = pan.read() - 1;
             pan.write(pos);
           }
@@ -112,12 +112,12 @@ void loop ()
 
         case CMD_SERVO_PIN_3: //tilt
           campos  = myGetchar () ;
-          if (campos <= 130){
-            pos = tilt.read() - 1;
+          if (campos <= 65){
+            pos = tilt.read() + 1;
             tilt.write(pos);
           }
-          else if (campos >= 140){
-            pos = tilt.read() + 1;
+          else if (campos >= 85){
+            pos = tilt.read() - 1;
             tilt.write(pos);
           }
           delay(50);
