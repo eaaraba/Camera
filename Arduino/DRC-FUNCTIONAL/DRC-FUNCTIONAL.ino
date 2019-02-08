@@ -53,8 +53,10 @@ void setup ()
   pan.attach(2);  // attaches the servo on pin 2 to the servo object
   tilt.attach(3);  // attaches the servo on pin 3 to the servo object
   pinMode(13, OUTPUT);
+  pinMode(9, OUTPUT);
   digitalWrite(13, LOW);
   pinMode(4, INPUT);
+  
   pan.write(90);
   tilt.write(0);
 }
@@ -78,8 +80,12 @@ void loop ()
   int LEDpin ;
   int Timer;
   int x;
+  int d;
+  int reading1;
   for (;;)
   {
+    reading1 = analogRead(A5);
+    d = map(reading1, 0, 1023, 0, 255);
     if (Serial.available () > 0)
     {
       if (true){
@@ -126,6 +132,7 @@ void loop ()
         case CMD_LED_OFF:
           LEDpin = myGetchar();
           digitalWrite(LEDpin, LOW);
+          digitalWrite(9, LOW);
           delay(50);
           continue ;
 
@@ -133,6 +140,7 @@ void loop ()
        case CMD_LED_ON:
         LEDpin = myGetchar();
         digitalWrite(LEDpin, HIGH);
+        analogWrite(9, d);
         delay(50);
         continue;
 
