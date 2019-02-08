@@ -13,7 +13,7 @@ print("Connected to Arduino...")
 value1 = 0
 value2 = 0
 LEDIndex = 0
-Timer = 0
+faceInFrame = True
 imgIndex = 0
 
 # importing the Haarcascade XML data used for face detection; copy the XML file to the same folder as the code
@@ -43,9 +43,8 @@ while 1:
     # scaleFactor, used by the program to try and resize potential faces to fit the size of the faces that was used to train the model
     # minNeighbors, used to reduce false positives as it will on detect a face if it can draw multiple ROIs around it
     if faces == ():
-        Timer = 0
-        imgIndex += 0
-        print(Timer)
+        faceInFrame = True
+        print(faceInFrame)
 # detect the face and create a roi based on positional data
     for (x, y, w, h) in faces:
         roi_gray = gray[y:y+h, x:x+w]
@@ -68,12 +67,10 @@ while 1:
         arduino.write(bytearray([xcoordinate, x]))  # First write a two to let the arduino know it is receiving an X-coordinate
         arduino.write(bytearray([ycoordinate, y]))  # First write a three to let the arduino know it is receiving a Y-coordinate
         print("Center of Rectangle is :", center, '\n \n')
-        Timer += 1
-        print(Timer)
-        if Timer == 1:
+        if faceInFrame == True:
             cv2.imwrite("Images\LatestImage" + str(imgIndex) + ".jpg", img)
-        if Timer == 200:
-            Timer = 0
+            imgIndex += 1
+            faceInFrame = False
         time.sleep(0.01)
 
 # Display the stream, with the ROI
