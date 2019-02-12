@@ -3,6 +3,7 @@
 import serial
 import time
 import cv2
+import copy
 
 
 class Firmware:
@@ -28,12 +29,17 @@ class CV:
         self.imgIndex = 0                                               # int value to help save files into the system, it hold the value to increment it
         self.pic_taken = False                                        # state value to help the img saving
         self.time_counter = 0
+        firmware.connect()
 
     def loop(self):
         # using a while loop to run the program continously
+
+        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+        eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
+
         while 1:
             self.__reset_timer()
-            self.__detection()                                          # running the detection private method
+            self.__detection(face_cascade, eye_cascade)                                          # running the detection private method
             k = cv2.waitKey(1) & 0xff                                   # !!!!!
             if k == 27:                                                 # pressing !!!!!! quitting the program
                 self.cap.release()                                      # releasing
@@ -42,9 +48,10 @@ class CV:
             elif k == 111:                                              # if O(letter o not 0) is pressed the LED(pin 13) will be turned on or off depending on it's current state. The pin has to start as being LOW
                 self.__led_on_off()
 
-    def __detection(self):
-        face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    def __detection(self, face_cascade, eye_cascade):
+
         ret, img = self.cap.read()
+        pure_img = copy.deepcopy(img)
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, 1.3, 3)
         for (x, y, w, h) in faces:                                        # that for loop only run if the faces exists
@@ -54,11 +61,19 @@ class CV:
             center = (x, y)
             area = (w, h)
 
+            roi_gray = gray[y:y + h, x:x + w]
+            roi_color = img[y:y + h, x:x + w]
+
+            eyes = eye_cascade.detectMultiScale(roi_gray)
+            for (ex, ey, ew, eh) in eyes:
+                cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+
             pos_x = int(xx)
             pos_y = int(yy)
 
-            firmware.write(bytearray([50, pos_x]))
-            firmware.write(bytearray([51, pos_y]))
+            firmware.write([50, pos_x])
+            firmware.write([51, pos_y])
+            time.sleep(0.1)
 
 
             # -------- not really need ------------
@@ -68,20 +83,20 @@ class CV:
             # print("\n")
             # -------- not really need ------------
 
-            self.__take_picture(faces, area, img)
+            self.__take_picture(faces, eyes, area, pure_img)
 
             time.sleep(0.04)    # about 24 frame per sec
 
         cv2.imshow('img', img)
 
     def __reset_timer(self):
-        if self.time_counter == 30:
+        if self.time_counter == 100:
             self.time_counter = 0
             self.pic_taken = False
         self.time_counter += 1
 
-    def __take_picture(self, faces, area, img):
-        if len(faces) > 0 and self.__face_big_enough(area) and self.pic_taken == False:
+    def __take_picture(self, faces, eyes, area, img):
+        if len(faces) > 0 and len(eyes) > 2 and self.__face_big_enough(area) and self.pic_taken == False:
             print("take picture")
             self.imgIndex += 1
             self.pic_taken = True
@@ -104,7 +119,6 @@ class CV:
             print("LED OFF")
 
 
-firmware = Firmware("COM5", 115200)
-firmware.connect()
+firmware = Firmware("COM7", 115200)
 images = CV(firmware)
 images.loop()
