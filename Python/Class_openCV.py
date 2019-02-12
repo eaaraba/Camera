@@ -18,18 +18,18 @@ class Firmware:
         print("Connected to Arduino...")
 
     def write(self, byte_arr):
-        self.arduino.write(bytearray(byte_arr))
+        self.arduino.write(byte_arr)
 
 
 class CV:
     # initiating the class
     def __init__(self, firmware):
-        self.cap = cv2.VideoCapture(0)                                  # using the cv2.Videocature method to open video capturing device
+        self.cap = cv2.VideoCapture(1)                                  # using the cv2.Videocature method to open video capturing device
         self.LEDIndex = 0                                               # used to show the "state" of the connected LED on the arduino
         self.imgIndex = 0                                               # int value to help save files into the system, it hold the value to increment it
         self.pic_taken = False                                        # state value to help the img saving
         self.time_counter = 0
-        firmware.connect()
+
 
     def loop(self):
         # using a while loop to run the program continously
@@ -71,10 +71,8 @@ class CV:
             pos_x = int(xx)
             pos_y = int(yy)
 
-            firmware.write([50, pos_x])
-            firmware.write([51, pos_y])
-            time.sleep(0.1)
-
+            firmware.write(bytearray([50, pos_x]))
+            firmware.write(bytearray([51, pos_y]))
 
             # -------- not really need ------------
 
@@ -121,4 +119,5 @@ class CV:
 
 firmware = Firmware("COM7", 115200)
 images = CV(firmware)
+firmware.connect()
 images.loop()
