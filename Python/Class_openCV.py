@@ -24,7 +24,7 @@ class Firmware:
 class CV:
     # initiating the class
     def __init__(self, firmware):
-        self.cap = cv2.VideoCapture(1)                                  # using the cv2.Videocature method to open video capturing device
+        self.cap = cv2.VideoCapture(0)                                  # using the cv2.Videocature method to open video capturing device
         self.LEDIndex = 0                                               # used to show the "state" of the connected LED on the arduino
         self.imgIndex = 0                                               # int value to help save files into the system, it hold the value to increment it
         self.pic_taken = False                                        # state value to help the img saving
@@ -36,10 +36,11 @@ class CV:
 
         face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
         eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
+        smile_cascade = cv2.CascadeClassifier('haarcascade_smile.xml')
 
         while 1:
             self.__reset_timer()
-            self.__detection(face_cascade, eye_cascade)                                          # running the detection private method
+            self.__detection(face_cascade, eye_cascade, smile_cascade)                                          # running the detection private method
             k = cv2.waitKey(1) & 0xff                                   # !!!!!
             if k == 27:                                                 # pressing !!!!!! quitting the program
                 self.cap.release()                                      # releasing
@@ -48,7 +49,7 @@ class CV:
             elif k == 111:                                              # if O(letter o not 0) is pressed the LED(pin 13) will be turned on or off depending on it's current state. The pin has to start as being LOW
                 self.__led_on_off()
 
-    def __detection(self, face_cascade, eye_cascade):
+    def __detection(self, face_cascade, eye_cascade, smile_cascade):
 
         ret, img = self.cap.read()
         pure_img = copy.deepcopy(img)
@@ -58,7 +59,7 @@ class CV:
             cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 5)
             xx = int((x + (x + w)) / 6)
             yy = int((y + (y + h)) / 6)
-            center = (x, y)
+
             area = (w, h)
 
             roi_gray = gray[y:y + h, x:x + w]
@@ -71,17 +72,22 @@ class CV:
             pos_x = int(xx)
             pos_y = int(yy)
 
+            smile = smile_cascade.detectMultiScale(
+                roi_gray,
+                scaleFactor=1.16,
+                minNeighbors=35,
+                minSize=(25, 25),
+                flags=cv2.CASCADE_SCALE_IMAGE
+            )
+
+            for (x2, y2, w2, h2) in smile:
+                cv2.rectangle(roi_color, (x2, y2), (x2 + w2, y2 + h2), (255, 0, 0), 2)
+                cv2.putText(img, 'Smile', (x, y - 7), 3, 1.2, (0, 255, 0), 2, cv2.LINE_AA)
+
             firmware.write(bytearray([50, pos_x]))
             firmware.write(bytearray([51, pos_y]))
 
-            # -------- not really need ------------
-
-            # print("Center of Rectangle is :", center)
-            # print("Area of the image is :", area)
-            # print("\n")
-            # -------- not really need ------------
-
-            self.__take_picture(faces, eyes, area, pure_img)
+            self.__take_picture(faces, eyes, smile, area, pure_img)
 
             time.sleep(0.04)    # about 24 frame per sec
 
@@ -93,8 +99,8 @@ class CV:
             self.pic_taken = False
         self.time_counter += 1
 
-    def __take_picture(self, faces, eyes, area, img):
-        if len(faces) > 0 and len(eyes) > 2 and self.__face_big_enough(area) and self.pic_taken == False:
+    def __take_picture(self, faces, eyes, smile, area, img):
+        if len(faces) > 0 and len(eyes) > 2 and len(smile) > 0 and self.__face_big_enough(area) and self.pic_taken == False:
             print("take picture")
             self.imgIndex += 1
             self.pic_taken = True
